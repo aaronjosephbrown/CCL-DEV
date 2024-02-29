@@ -1,0 +1,87 @@
+DROP PROGRAM kids_ssu_visits_w_floor_ops GO
+CREATE PROGRAM kids_ssu_visits_w_floor_ops
+ 
+/*****************************************************************************
+ 
+Author:           Aaron J. Brown
+ 
+Date Written:     02/28/2024
+ 
+PPM:              ######
+ 
+Source file name: kids_ssu_visits_w_floor_ops.prg
+ 
+Object name:      kids_ssu_visits_w_floor_ops
+ 
+Program purpose:  Day Surgery Discharge Date Report
+ 
+Executing from:   Ops Job
+ 
+*******************************************************************************
+ 
+Mod Date       By              PPM    Comment
+ 
+--- ---------- -------------- ------ ------------------------------------------
+ 
+001 02/28/2024 Aaron J. Brown 192954 Initial Release
+ 
+******************************************************************************/
+ 
+PROMPT "Output to File/Printer/MINE" = MINE
+ 
+WITH OUTDEV
+ 
+;ops job setup
+RECORD reply( 
+	1 ops_event = vc
+	1 status_data
+    	2 status = c1
+    	2 subeventstatus[1]
+      		3 OperationName = c25
+      		3 OperationStatus = c1
+      		3 TargetObjectName = c25
+      		3 TargetObjectValue = vc
+     )
+SET reply->status_data->status = "Z"
+ 
+SET OUTPATIENTINABED_CD = uar_get_code_by("DISPLAYKEY", 71, "INPATIENT")
+SET DAYSURGERY_CD = uar_get_code_by("DISPLAYKEY", 71, "DAYSURGERY")
+SET OBSERVATION_CD = uar_get_code_by("DISPLAYKEY", 71, "OUTPATIENTINABED")
+ 
+SET NURSEUNIT_CD = uar_get_code_by("MEANING", 220, "NURSEUNIT")
+SET AMBULATORY_CD = uar_get_code_by("MEANING", 220, "AMBULATORY")
+ 
+SELECT DISTINCT INTO $OUTDEV
+	P.ALIAS
+	, EA.ALIAS
+	, PE.NAME_FULL_FORMATTED
+	, ENCNTR_TYPE_DISP = UAR_GET_CODE_DISPLAY(E.ENCNTR_TYPE_CD)
+	, LOC_ROOM_DISP = UAR_GET_CODE_DISPLAY(E.LOC_ROOM_CD)
+	, LOC_NURSE_UNIT_DISP = UAR_GET_CODE_DISPLAY(E.LOC_NURSE_UNIT_CD)
+	, E.REG_DT_TM
+	, E.DISCH_DT_TM
+ 
+FROM
+	ENCOUNTER   E
+	, PERSON_ALIAS   P
+	, PERSON   PE
+	, ENCNTR_ALIAS   EA
+ 
+PLAN E WHERE E.REG_DT_TM BETWEEN CNVTDATETIME(CURDATE,0) AND CNVTDATETIME(curdate, 235959)         
+	AND E.ENCNTR_TYPE_CD IN (OUTPATIENTINABED_CD, DAYSURGERY_CD, OBSERVATION_CD)
+	AND E.LOC_FACILITY_CD = VALUE(UAR_GET_CODE_BY("DISPLAYKEY", 220, "MINNEAPOLIS")) 
+	AND E.LOCATION_CD NOT IN (NURSEUNIT_CD, AMBULATORY_CD)
+	AND E.ACTIVE_IND = 1
+JOIN PE WHERE E.PERSON_ID = PE.PERSON_ID AND PE.ACTIVE_IND = 1 
+JOIN P WHERE PE.PERSON_ID = P.PERSON_ID AND P.ALIAS_POOL_CD = 4044 AND P.ACTIVE_IND = 1
+JOIN EA WHERE E.ENCNTR_ID = EA.ENCNTR_ID AND EA.ALIAS_POOL_CD = 4045 AND EA.ACTIVE_IND = 1
+ 
+ORDER BY
+	E.DISCH_DT_TM
+	, EA.ALIAS
+	, PE.NAME_FULL_FORMATTED
+WITH NOCOUNTER, FORMAT, SEPARATOR = "",  FORMFEED = NONE
+ 
+SET reply->status_data->status = "S"
+ 
+END GO
