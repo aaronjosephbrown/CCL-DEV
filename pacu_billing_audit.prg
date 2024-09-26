@@ -1,5 +1,5 @@
-drop program kids_mp_pacu_billing_audit_ops go
-create program kids_mp_pacu_billing_audit_ops
+drop program kids_pacu_billing_audit_ops go
+create program kids_pacu_billing_audit_ops
 /*****************************************************************************
 
 Author:           Aaron J. Brown
@@ -8,11 +8,11 @@ Date Written:     09/12/2024
 
 PPM:              193437
 
-Source file name: kids_mp_pacu_billing_audit_ops.prg
+Source file name: kids_pacu_billing_audit_ops.prg
 
-Object name:      kids_mp_pacu_billing_audit_ops
+Object name:      kids_pacu_billing_audit_ops
 
-Program purpose:  Identify PACU Missing Billing Items at MPLS
+Program purpose:  Identify PACU Missing Billing Items
 
 Executing from:   Ops Job
 
@@ -23,8 +23,6 @@ Mod Date       By              PPM    Comment
 --- ---------- -------------- ------ ------------------------------------------
 
 001 09/20/2024 Aaron J. Brown 193437 Initial Release
-002 09/23/2024 Aaron J. Brown 193437 Excluded Additional ORs
-003 09/23/2024 Aaron J. Brown 193437 Excluded Encounters & Remove PF
 
 ******************************************************************************/
 
@@ -113,7 +111,7 @@ PLAN SC
 	
 JOIN E
 	WHERE E.ENCNTR_ID = SC.ENCNTR_ID
-	AND E.LOC_FACILITY_CD = FACILITY_CD /*MPLS*/
+	AND E.LOC_FACILITY_CD = FACILITY_CD
 	/* Removed encounter types */
 	AND E.ENCNTR_TYPE_CD NOT IN (INPATIENT_CD, OBSERVATION_CD, OUTPATIENTINABED_CD)
 	
