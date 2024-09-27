@@ -1,36 +1,35 @@
-drop program kids_pacu_billing_audit_ops go
-create program kids_pacu_billing_audit_ops
+drop program kids_mp_pacu_billing_audit_ops go
+create program kids_mp_pacu_billing_audit_ops
 /*****************************************************************************
-
+ 
 Author:           Aaron J. Brown
-
+ 
 Date Written:     09/12/2024
-
+ 
 PPM:              193437
-
-Source file name: kids_pacu_billing_audit_ops.prg
-
-Object name:      kids_pacu_billing_audit_ops
-
-Program purpose:  Identify PACU Missing Billing Items
-
+ 
+Source file name: kids_mp_pacu_billing_audit_ops.prg
+ 
+Object name:      kids_mp_pacu_billing_audit_ops
+ 
+Program purpose:  Identify PACU Missing Billing Items at MPLS
+ 
 Executing from:   Ops Job
-
+ 
 *******************************************************************************
-
+ 
 Mod Date       By              PPM    Comment
-
+ 
 --- ---------- -------------- ------ ------------------------------------------
-
+ 
 001 09/20/2024 Aaron J. Brown 193437 Initial Release
-
+ 
 ******************************************************************************/
-
+ 
 PROMPT 
 	"Output to File/Printer/MINE" = "MINE"
-	
 WITH OUTDEV
-
+ 
 /* Ops job reply */
 RECORD reply( 
 	1 ops_event = vc
@@ -41,11 +40,11 @@ RECORD reply(
       		3 OperationStatus = c1
       		3 TargetObjectName = c25
       		3 TargetObjectValue = vc
- )
+)
 SET reply->status_data->status = "Z"
-
+ 
 FREE RECORD DATA
-
+ 
 RECORD DATA (
 	1 CNT = i4
 	1 QUAL[*]
@@ -68,64 +67,60 @@ RECORD DATA (
 		2 CNT = i4
 		2 ACTIVE_IND = i2
 )
-
+ 
 /* Phase Times */
-SET PHASEI_CALC_CD = VALUE(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEICALCULATION"))
-SET PHASEII_CALC_CD = VALUE(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEIICALCULATION"))
-SET PHASEISTART_CD = UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEISTART")
-SET PHASEIISTART_CD = UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEIISTART")
-SET PHASEISTOP_CD = UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEISTOP")
-SET PHASEIISTOP_CD = UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEIISTOP")
-SET PHASEISTOPPHASEIISTART_CD = VALUE(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEISTOPPHASEIISTART"))
+DECLARE PHASEI_CALC_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEICALCULATION")), protect
+DECLARE PHASEII_CALC_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEIICALCULATION")), protect
+DECLARE PHASEISTART_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEISTART")), protect
+DECLARE PHASEIISTART_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEIISTART")), protect
+DECLARE PHASEISTOP_CD =  f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEISTOP")), protect
+DECLARE PHASEIISTOP_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEIISTOP")), protect
+DECLARE PHASEISTOPPHASEIISTART_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEISTOPPHASEIISTART")), protect
 /* Additional Events */
-SET PATIENTBYPASSPACU_CD = VALUE(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PATIENTBYPASSPACU"))
-SET FACILITY_CD = UAR_GET_CODE_BY("DISPLAYKEY", 220, "MINNEAPOLIS")
-SET FIN_TYPE_CD = UAR_GET_CODE_BY("DISPLAYKEY",319,"FINNBR")
+DECLARE PATIENTBYPASSPACU_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PATIENTBYPASSPACU")), protect
+DECLARE FACILITY_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 220, "MINNEAPOLIS")), protect
+DECLARE FIN_TYPE_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY",319,"FINNBR")), protect
 /* Excluded Areas */
-SET CVOR_CD = UAR_GET_CODE_BY("DISPLAYKEY",221,"CVOR")
-SET CVNORA_CD = UAR_GET_CODE_BY("DISPLAYKEY",221,"CVNORA")
-SET CVHYBRID_CD = UAR_GET_CODE_BY("DISPLAYKEY",221,"CVHYBRID")
-SET CVLAB_CD = UAR_GET_CODE_BY("DISPLAYKEY",221,"CVLAB")
+DECLARE CVOR_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY",221,"CVOR")), protect
+DECLARE CVNORA_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY",221,"CVNORA")), protect
+DECLARE CVHYBRID_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY",221,"CVHYBRID")), protect
+DECLARE CVLAB_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY",221,"CVLAB")), protect
 /* Excluded Encounter */
-SET INPATIENT_CD = UAR_GET_CODE_BY("DISPLAYKEY",71,"INPATIENT")
-SET OBSERVATION_CD = UAR_GET_CODE_BY("DISPLAYKEY",71,"OBSERVATION")
-SET OUTPATIENTINABED_CD = UAR_GET_CODE_BY("DISPLAYKEY",71,"OUTPATIENTINABED")
-
+DECLARE INPATIENT_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY",71,"INPATIENT")), protect
+DECLARE OBSERVATION_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY",71,"OBSERVATION")), protect
+DECLARE OUTPATIENTINABED_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY",71,"OUTPATIENTINABED")), protect
+ 
 /**************************************************************************************************
 Get all surgical cases completed within 7 days.
 **************************************************************************************************/
-
+ 
 SELECT DISTINCT INTO "NL:"
-
+ 
 FROM 
 	ENCNTR_ALIAS EA
 	, PERSON P
 	, SURGICAL_CASE SC
 	, ENCOUNTER E
-
+ 
 PLAN SC
 	WHERE SC.SURG_STOP_DT_TM BETWEEN CNVTLOOKBEHIND("7, d") 
-	AND CNVTDATETIME(CURDATE, 235959)
+	AND CNVTDATETIME(CURDATE, CURTIME3)
 	/* Removed CVORS */
 	AND SC.SCHED_OP_LOC_CD NOT IN (CVOR_CD, CVHYBRID_CD, CVNORA_CD, CVLAB_CD) 
-	
 JOIN E
 	WHERE E.ENCNTR_ID = SC.ENCNTR_ID
-	AND E.LOC_FACILITY_CD = FACILITY_CD
+	AND E.LOC_FACILITY_CD = FACILITY_CD /*MPLS*/
 	/* Removed encounter types */
 	AND E.ENCNTR_TYPE_CD NOT IN (INPATIENT_CD, OBSERVATION_CD, OUTPATIENTINABED_CD)
-	
 JOIN EA
 	WHERE EA.ENCNTR_ID = E.ENCNTR_ID
-	AND E.DISCH_DT_TM < CNVTDATETIME(CURDATE, CURTIME3)
 	AND EA.ENCNTR_ALIAS_TYPE_CD = VALUE(UAR_GET_CODE_BY("DISPLAYKEY",319,"FINNBR"))
-
+ 
 JOIN P
 	WHERE P.PERSON_ID = E.PERSON_ID
 /*********** REPORTWRITER SECTION ***************/
 HEAD REPORT
 	X = 0
-	
 DETAIL
 	X += 1
 	CALL ALTERLIST(DATA->QUAL, X)
@@ -133,23 +128,22 @@ DETAIL
 	DATA->QUAL[X].DOB = FORMAT(P.BIRTH_DT_TM,"MM/DD/YY ;;D")
 	DATA->QUAL[X].ENCNTR_ID = EA.ENCNTR_ID
 	DATA->QUAL[X].ENCNTR_A = EA.ALIAS
-	
 FOOT REPORT
 	DATA->CNT = X
 /*********** END REPORTWRITER SECTION ***************/
 WITH NOCOUNTER
-
+ 
 /**************************************************************************************************
 Get x clinical events.
 **************************************************************************************************/
-
+ 
 SELECT INTO "NL:"
-
+ 
 FROM CLINICAL_EVENT CE
 		,(DUMMYT D WITH SEQ = DATA->CNT)
 PLAN D
 	WHERE DATA->CNT > 0
-
+ 
 JOIN CE
 	WHERE CE.ENCNTR_ID = DATA->QUAL[D.SEQ].ENCNTR_ID
 	AND CE.EVENT_CD IN (
@@ -161,11 +155,9 @@ JOIN CE
 	)
 	AND CE.RESULT_STATUS_CD IN (REQDATA->AUTH_AUTH_CD, REQDATA->AUTH_MODIFIED_CD, REQDATA->AUTH_ALTERED_CD)
 	AND CE.VALID_UNTIL_DT_TM > CNVTDATETIME(CURDATE,CURTIME3)
- 
 ORDER BY D.SEQ
-
+ 
 DETAIL
-	
 	CASE(CE.EVENT_CD)
 		 /* Phase I Cal */
 		 OF PHASEI_CALC_CD: 
@@ -200,51 +192,51 @@ DETAIL
 	     	DATA->QUAL[D.SEQ].PHASEIINURSE_ID = CE.PERFORMED_PRSNL_ID
 	     /* Phase I By Pass */
 	     OF PATIENTBYPASSPACU_CD:
-	     		DATA->QUAL[D.SEQ].PATIENTBYPASSPACU = 1
-	     		DATA->QUAL[D.SEQ].PHASEI_START = 1
-	     		DATA->QUAL[D.SEQ].PHASEI_STOP = 1
-	     		DATA->QUAL[D.SEQ].PHASEI_CALC = 1
+	     	IF (CE.RESULT_VAL = "Yes")
+	     			DATA->QUAL[D.SEQ].PATIENTBYPASSPACU = 1
+	     			DATA->QUAL[D.SEQ].PHASEI_START = 1
+	     			DATA->QUAL[D.SEQ].PHASEI_STOP = 1
+	     			DATA->QUAL[D.SEQ].PHASEI_CALC = 1
+	     	ENDIF
 	ENDCASE
 /*********** REPORTWRITER SECTION ***************/
 FOOT D.SEQ 
-	/* Phase II Cal < 30 mins exception */
-	IF(DATA->QUAL[D.SEQ].PHASEII_CALC_RES < 30)
+	/* Phase II Cal < 30 mins exclusion */
+	IF(DATA->QUAL[D.SEQ].PHASEII_CALC AND DATA->QUAL[D.SEQ].PHASEII_CALC_RES < 30)
 		DATA->QUAL[D.SEQ].PHASEII_START = 1
 		DATA->QUAL[D.SEQ].PHASEII_STOP = 1
 	ENDIF
-	
-	IF(DATA->QUAL[D.SEQ].PATIENTBYPASSPACU = 1 AND DATA->QUAL[D.SEQ].PHASEII_CALC = 0)
+	/* Bypass PACU exclusion */
+	IF(DATA->QUAL[D.SEQ].PATIENTBYPASSPACU AND DATA->QUAL[D.SEQ].PHASEII_CALC = 0)
 		DATA->QUAL[D.SEQ].ACTIVE_IND = 1
 	ELSEIF(DATA->QUAL[D.SEQ].PATIENTBYPASSPACU = 0 
 		AND (DATA->QUAL[D.SEQ].PHASEI_CALC = 0 OR DATA->QUAL[D.SEQ].PHASEII_CALC = 0))
 		DATA->QUAL[D.SEQ].ACTIVE_IND = 1
 	ENDIF
-	
 WITH NOCOUNTER
 /*********** END REPORTWRITER SECTION ***************/
 CALL ECHORECORD(DATA)
-
+ 
 /**************************************************************************************************
 Get nurse names.
 **************************************************************************************************/
-
+ 
 SELECT INTO "NL:"
-
+ 
 FROM (DUMMYT D WITH SEQ = DATA->CNT)
 	,PRSNL PL
-
+ 
 PLAN D
 	WHERE DATA->CNT > 0
-
+ 
 JOIN PL
 	WHERE PL.PERSON_ID IN (DATA->QUAL[D.SEQ].PHASEINURSE_ID,
 		DATA->QUAL[D.SEQ].PHASEIINURSE_ID)
-
+ 
 ORDER BY D.SEQ
-
+ 
 /*********** REPORTWRITER SECTION ***************/
 DETAIL
-	
 	CASE (PL.PERSON_ID)
 		OF DATA->QUAL[D.SEQ].PHASEINURSE_ID : 
 			DATA->QUAL[D.SEQ].PHASEINURSE = PL.NAME_FULL_FORMATTED
@@ -253,19 +245,16 @@ DETAIL
 	ENDCASE
 /*********** END REPORTWRITER SECTION ***************/
 WITH NOCOUNTER
-
-
+ 
+ 
 /**************************************************************************************************
 Print
 **************************************************************************************************/
-	
 SELECT DISTINCT INTO $OUTDEV
-	
 FROM (DUMMYT D WITH SEQ = DATA->CNT)
-
+ 
 PLAN D
 	WHERE DATA->CNT > 0
-	
 ORDER BY D.SEQ
 /*********** REPORTWRITER SECTION ***************/
 HEAD REPORT
@@ -274,7 +263,6 @@ HEAD REPORT
 	Y_AXIS = 25
 	X_AXIS = 35
 	X = 0
-	
 HEAD PAGE
 	LINE_D = FILLSTRING(83,"=")
     CALL PRINT(CALCPOS(35, 0))  "{CPI/10}{FONT/4}{b}", CURTIME "HH:MM;;M", "{endb}", ROW + 1
@@ -283,7 +271,6 @@ HEAD PAGE
 	CALL PRINT(CALCPOS(35, 27)) LINE_D, ROW + 2
 	Y_AXIS += 15
 	PAGE_COUNT += 1
-	
 HEAD D.SEQ
 		X += 1
 		IF(DATA->QUAL[D.SEQ].ACTIVE_IND)
@@ -295,7 +282,7 @@ HEAD D.SEQ
 			CALL PRINT(CALCPOS(X_AXIS + 450, Y_AXIS)) 
 				"FIN: " DATA->QUAL[D.SEQ].ENCNTR_A, ROW + 1
 		ENDIF
-
+ 
 DETAIL
 	IF(DATA->QUAL[D.SEQ].ACTIVE_IND)
 		P += 1
@@ -394,9 +381,8 @@ DETAIL
 		X_AXIS = 35
 		Y_AXIS += 25
 	ENDIF
-	
 	CALL PRINT(CALCPOS(550,700)) PAGE_COUNT, ROW + 1
-	IF (Y_AXIS > 800)
+	IF (Y_AXIS > 650)
 		"{NP}", ROW + 1
 		Y_AXIS = 25, ROW + 1
 		P = 0
@@ -408,6 +394,6 @@ WITH NOCOUNTER
 	,FORMFEED = NONE
 	,DIO = POSTSCRIPT
 	,FORMAT = variable
-
+ 
 SET reply->status_data->status = "S"
 END GO
