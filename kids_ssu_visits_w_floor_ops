@@ -9,11 +9,11 @@ Date Written:     02/28/2024
  
 PPM:              ######
  
-Source file name: kids_ssu_visits_w_floor_ops.prg
+Source file name: ssu_visits_w_floor_ops.prg
  
-Object name:      kids_ssu_visits_w_floor_ops
+Object name:      ssu_visits_w_floor_ops
  
-Program purpose:  MPLS Day Surgery Discharge Date Report
+Program purpose:  Day Surgery Discharge Date Report
  
 Executing from:   Ops Job
  
@@ -23,7 +23,7 @@ Mod Date       By              PPM    Comment
  
 --- ---------- -------------- ------ ------------------------------------------
  
-001 02/28/2024 Aaron J. Brown 192954 Initial Release
+001 02/28/2024 Aaron J. Brown XXXXXX Initial Release
  
 ******************************************************************************/
  
@@ -76,7 +76,7 @@ FROM
  
 PLAN E WHERE E.REG_DT_TM BETWEEN CNVTDATETIME(CURDATE -190,0) AND CNVTDATETIME(curdate, 235959)         
 	AND E.ENCNTR_TYPE_CD IN (OUTPATIENTINABED_CD, DAYSURGERY_CD, OBSERVATION_CD)
-	AND E.LOC_FACILITY_CD = VALUE(UAR_GET_CODE_BY("DISPLAYKEY", 220, "MINNEAPOLIS")) 
+	AND E.LOC_FACILITY_CD = VALUE(UAR_GET_CODE_BY("DISPLAYKEY", 220, "NASHVILLE")) 
 	AND E.LOCATION_CD NOT IN (NURSEUNIT_CD, AMBULATORY_CD)
 	AND E.ACTIVE_IND = 1
 JOIN PE WHERE E.PERSON_ID = PE.PERSON_ID AND PE.ACTIVE_IND = 1 
@@ -128,7 +128,7 @@ HEAD REPORT
 	REG_X = 470
 	DISCH_X = 540
 HEAD PAGE 
-	CALL PRINT(CALCPOS(220, 0))         "{CPI/10}{FONT/4}{b}" "MPLS SSU VISIT W FLOOR","{endb}", ROW + 1
+	CALL PRINT(CALCPOS(220, 0))         "{CPI/10}{FONT/4}{b}" "SSU VISIT W FLOOR","{endb}", ROW + 1
 	C_DATE = format(curdate,"mm/dd/yyyy;;d")
 	CALL PRINT(CALCPOS(540, 0))         "{CPI/10}{FONT/4}" C_DATE, ROW + 1
 	CALL PRINT(CALCPOS(MRN_X,Y_POS))    "{CPI/10}{FONT/4}{b}" "MRN", ROW + 1
