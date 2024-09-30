@@ -1,5 +1,5 @@
-DROP PROGRAM kids_ssu_visits_w_floor_ops GO
-CREATE PROGRAM kids_ssu_visits_w_floor_ops
+DROP PROGRAM ssu_visits_w_floor_ops GO
+CREATE PROGRAM ssu_visits_w_floor_ops
  
 /*****************************************************************************
  
