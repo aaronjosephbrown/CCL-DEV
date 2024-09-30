@@ -1,21 +1,19 @@
-drop   program kids_clin_doc_pt_cncus_rel_ltr:dba go
-create program kids_clin_doc_pt_cncus_rel_ltr:dba
+drop program clin_doc_pt_cncus_rel_ltr:dba go
+create program clin_doc_pt_cncus_rel_ltr:dba
 
 /*****************************************************************************
-Author:            Shane Peterson
-Date Written:      12/19/2019
+Author:            Aaron Brown
+Date Written:      12/19/2024
 PPM:               173547
-Source file name:  kids_clin_doc_pt_concussion_release_ltr.prg
-Object name:       kids_clin_doc_pt_cncus_rel_ltr
+Source file name:  clin_doc_pt_concussion_release_ltr.prg
+Object name:       clin_doc_pt_cncus_rel_ltr
 Program purpose:
 Executing from:    PowerChart, Communicate -> Patient Letter -> Subject: Concussion Clearance Letter
-Special Notes:     calls kids_rpt_generator
+Special Notes:     calls rpt_generator
 *******************************************************************************
 Mod Date     By              PPM    Comment
 --- -------- --------------- ------ -------------------------------------------
-000 12/19/19 Shane Peterson  169178 Initial Release
-001 06/02/21 Mary Mattson    181657 Updated Heart Clinic location
-002 05/12/22 Zach Meyer    186549 MTKA updates
+000 12/19/24 Aaron Brown     XXXXXX Initial Release
 ******************************************************************************/
 
 declare    err_check(idx) = i2
@@ -35,7 +33,7 @@ subroutine err_check(idx)
     set zzz = zzz + 1
   endwhile
 
-  execute kids_send_email "greg.zarambo@childrensmn.org",build(idx),body,0
+  execute kids_send_email "aaron.brown@domainname.com",build(idx),body,0
 end ; subroutine err_check
 
 declare    fix_loc_name(loc_in = vc) = vc
@@ -43,13 +41,13 @@ subroutine fix_loc_name(loc_in)
   set temp1 = loc_in
 
   if (temp1 = "*-M")
-    set temp1 = replace(temp1,"-M","- Minneapolis",2)
+    set temp1 = replace(temp1,"-N","- Nashville",2)
   elseif (temp1 = "*-S")
-    set temp1 = replace(temp1,"-S","- St. Paul",2)
+    set temp1 = replace(temp1,"-C","- Clarksville",2)
   elseif (temp1 = "*-WB")
-    set temp1 = replace(temp1,"-WB","- Woodbury",2)
+    set temp1 = replace(temp1,"-Co","- Cooksville",2)
   elseif (temp1 = "*-Mtka")
-    set temp1 = replace(temp1,"-Mtka","- Minnetonka",2)
+    set temp1 = replace(temp1,"-K","- Knoxville",2)
   endif
 
   set temp1 = replace(temp1,"Cl-","Clinic",2)
@@ -206,9 +204,9 @@ detail
   endif
 
   if (e.loc_building_cd = HC_BUILDING_CD )
-     data->logo->img = "Childrens_MN_and_Heart_Clinic_logos_2020.jpg"
+     data->logo->img = "Nashville_MN_and_Heart_Clinic_logos_2020.jpg"
   else
-     data->logo->img = "ChildrensMN_2019_logo_2c_445_143.jpg"
+     data->logo->img = "NashvilleMN_2019_logo_2c_445_143.jpg"
   endif
 
   data->logo->str = concat("{IMAGE/~/nfs~/middle_fs~/custom_warehouses~/",trim(env),
@@ -522,7 +520,7 @@ set rpt->text =
                "{TAB/3}651-220-5230{END}")
 
 
-execute kids_rpt_generator
+execute rpt_generator
 
 set reply->text = rpt->text_formatted
 set reply->status_data->status = rpt->status
