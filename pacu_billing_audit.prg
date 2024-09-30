@@ -1,5 +1,5 @@
-drop program kids_mp_pacu_billing_audit_ops go
-create program kids_mp_pacu_billing_audit_ops
+drop program kids_pacu_billing_audit_ops go
+create program kids_pacu_billing_audit_ops
 /*****************************************************************************
 
 
@@ -16,15 +16,15 @@ PPM:              193437
 
 
 
-Source file name: kids_mp_pacu_billing_audit_ops.prg
+Source file name: kids_pacu_billing_audit_ops.prg
 
 
 
-Object name:      kids_mp_pacu_billing_audit_ops
+Object name:      kids_pacu_billing_audit_ops
 
 
 
-Program purpose:  Identify PACU Missing Billing Items at MPLS
+Program purpose:  Identify PACU Missing Billing Items
 
 
 
@@ -44,7 +44,7 @@ Mod Date       By              PPM    Comment
 
 
 
-001 09/20/2024 Aaron J. Brown 193437 Initial Release
+001 09/20/2024 Aaron J. Brown XXXXXX Initial Release
 
 
 
@@ -112,7 +112,7 @@ DECLARE PHASEIISTOP_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHA
 DECLARE PHASEISTOPPHASEIISTART_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PHASEISTOPPHASEIISTART")), protect
 /* Additional Events */
 DECLARE PATIENTBYPASSPACU_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 72, "PATIENTBYPASSPACU")), protect
-DECLARE FACILITY_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 220, "MINNEAPOLIS")), protect
+DECLARE FACILITY_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY", 220, "NASHVILLE")), protect
 DECLARE FIN_TYPE_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY",319,"FINNBR")), protect
 /* Excluded Areas */
 DECLARE CVOR_CD = f8 with constant(UAR_GET_CODE_BY("DISPLAYKEY",221,"CVOR")), protect
@@ -152,7 +152,7 @@ PLAN SC
   
 JOIN E
   WHERE E.ENCNTR_ID = SC.ENCNTR_ID
-  AND E.LOC_FACILITY_CD = FACILITY_CD /*MPLS*/
+  AND E.LOC_FACILITY_CD = FACILITY_CD
   /* Removed encounter types */
   AND E.ENCNTR_TYPE_CD NOT IN (INPATIENT_CD, OBSERVATION_CD, OUTPATIENTINABED_CD)
   
@@ -353,7 +353,7 @@ HEAD REPORT
 HEAD PAGE
   LINE_D = FILLSTRING(83,"=")
     CALL PRINT(CALCPOS(35, 0))  "{CPI/10}{FONT/4}{b}", CURTIME "HH:MM;;M", "{endb}", ROW + 1
-  CALL PRINT(CALCPOS(235, 0)) "{CPI/10}{FONT/4}{b}","*** MPLS PACU Billing Audit ***", "{endb}", ROW + 1
+  CALL PRINT(CALCPOS(235, 0)) "{CPI/10}{FONT/4}{b}","*** Nashville PACU Billing Audit ***", "{endb}", ROW + 1
   CALL PRINT(CALCPOS(535, 0))  "{CPI/10}{FONT/4}{b}", CURDATE "MM/DD/YY;;D", "{endb}", ROW + 1
   CALL PRINT(CALCPOS(35, 27)) LINE_D, ROW + 2
   Y_AXIS += 15
